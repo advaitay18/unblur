@@ -1,1 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";`nimport { GoogleGenAI } from "@google/genai";`n`nconst ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });`n`nexport async function POST(req: NextRequest) {`n  try {`n    const body = await req.json();`n    const result = await ai.models.generateContent({`n      model: body.model === "fast" ? "gemini-2.5-flash" : "gemini-2.5-pro",`n      contents: body.message || "Generate question",`n      config: {`n        systemInstruction: body.system,`n        maxOutputTokens: body.maxTokens || 400,`n        temperature: 0.7,`n      },`n    });`n    return NextResponse.json({ text: result.text });`n  } catch (err: any) {`n    console.error("[/api/quiz] error:", err);`n    return NextResponse.json({ error: "AI generation failed." }, { status: 500 });`n  }`n}
+import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const result = await ai.models.generateContent({
+      model: body.model === 'fast' ? 'gemini-2.5-flash' : 'gemini-2.5-pro',
+      contents: body.message || 'Generate question',
+      config: {
+        systemInstruction: body.system,
+        maxOutputTokens: body.maxTokens || 400,
+        temperature: 0.7,
+      },
+    });
+    return NextResponse.json({ text: result.text });
+  } catch (err: any) {
+    console.error('[/api/quiz] error:', err);
+    return NextResponse.json({ error: 'AI generation failed.' }, { status: 500 });
+  }
+}
