@@ -1059,37 +1059,31 @@ Respond with ONLY a JSON array, no other text, no markdown fences, in this exact
 }
 
 const CONFIG={
-  AI_PROXY_URL:'https://unblur-ai-proxy.YOUR-SUBDOMAIN.workers.dev',
-  SHEET_WEBHOOK_URL:'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec',
-  MODEL_FAST:'claude-haiku-4-5-20251001',
-  MODEL_QUALITY:'claude-sonnet-4-20250514'
+  AI_ANALYZE_URL:'/api/analyze',
+  SESSION_URL:'/api/session',
+  MODEL_FAST:'fast',
+  MODEL_QUALITY:'quality'
 };
 
 const S={stage:null,name:'',q:0,answers:[],aiAnswers:[],adaptDone:{},sc:{analytical:0,creative:0,social:0,independence:0,curiosity:0,risk:0,peer:0,authority:0},shownAdapt:false,user:null,paid149:false,paid499:false,chosenCareers:null};
 
-// ─── AI PROXY ───
+// ─── AI (Gemini via /api/analyze) ───
 async function callAI(systemPrompt,userMsg,maxTokens=600,model=CONFIG.MODEL_FAST){
-  if(CONFIG.AI_PROXY_URL.includes('YOUR-SUBDOMAIN')){
-    console.warn('AI proxy not configured — see SETUP.md. Falling back to static content.');
-    throw new Error('proxy not configured');
-  }
-  const res=await fetch(CONFIG.AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,max_tokens:maxTokens,system:systemPrompt,messages:[{role:'user',content:userMsg}]})});
-  if(!res.ok)throw new Error('proxy error '+res.status);
+  const res=await fetch(CONFIG.AI_ANALYZE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:userMsg,system:systemPrompt,maxTokens,model})});
+  if(!res.ok)throw new Error('AI request failed: '+res.status);
   const data=await res.json();
-  if(!data.content?.[0]?.text)throw new Error('bad response');
-  return data.content[0].text.trim();
+  const text=data.text??data.response??data.reply??data.message??data.content?.[0]?.text??(typeof data==='string'?data:null);
+  if(!text)throw new Error('Unexpected /api/analyze response shape');
+  return String(text).trim();
 }
 
-// ─── SHEETS LOGGING ───
-function logToSheet(userData){
-  if(CONFIG.SHEET_WEBHOOK_URL.includes('YOUR_DEPLOYMENT_ID')){console.warn('Sheet webhook not configured — see SETUP.md');return;}
-  const payload={
-    timestamp:new Date().toISOString(),
-    name:userData.name||'',email:userData.email||'',stage:userData.stage||'',
-    archetype:userData.archetype||'',scores:JSON.stringify(userData.scores||{}),
-    isAdult:userData.isAdult===true,guardianEmail:userData.guardianEmail||'',consentAt:userData.consentAt||'',
-  };
-  fetch(CONFIG.SHEET_WEBHOOK_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)}).catch(()=>{});
+// ─── SESSION / DATA (Supabase via /api/session) ───
+async function saveSession(action,payload){
+  try{
+    const res=await fetch(CONFIG.SESSION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,timestamp:new Date().toISOString(),...payload})});
+    if(!res.ok)console.warn('Session save failed: '+res.status);
+    return res.ok?await res.json().catch(()=>null):null;
+  }catch(e){console.warn('Session save failed',e);return null;}
 }
 const SECS=['Thinking Style','Energy & Motivation','Decision Behaviour','Work Environment','Future Interests'];
 const SICONS=['🧠','⚡','🎯','🌿','✨'];
@@ -1156,7 +1150,7 @@ function createAccount(){
   sessionStorage.setItem('unblur_user',JSON.stringify(userData));
   sessionStorage.setItem('unblur_pass',pass);
   S.user=userData;
-  logToSheet({email,name:S.name,stage:S.stage,archetype:calcAt(),scores:S.sc,isAdult:S.isAdult,guardianEmail:S.isAdult?'':guardianEmail,consentAt:new Date().toISOString()});
+  saveSession('signup',{email,name:S.name,stage:S.stage,archetype:calcAt(),scores:S.sc,isAdult:S.isAdult,guardianEmail:S.isAdult?'':guardianEmail,consentAt:new Date().toISOString()});
   showResults();
 }
 
@@ -1315,7 +1309,6 @@ function buildAnswerSummary(){
   }).filter(Boolean).join('\n');
 }
 async function generateAdaptiveQuestion(sectionIdx){
-  if(CONFIG.AI_PROXY_URL.includes('YOUR-SUBDOMAIN'))return null;
   const system=`You are Unblur's quiz engine, writing one tailored follow-up question for a student aged 13-19.
 
 Section just completed: "${SECS[sectionIdx]}"
@@ -1476,7 +1469,7 @@ function getCareerBriefs(a){
 
 function payFullReport(){
   S.paid149=true;
-  logToSheet({email:S.user?.email||'',name:S.name||'',stage:'report-unlocked',archetype:calcAt(),scores:S.sc});
+  saveSession('report_unlocked',{email:S.user?.email||'',name:S.name||'',stage:'report-unlocked',archetype:calcAt(),scores:S.sc});
   buildReport();show('s-report');
 }
 
