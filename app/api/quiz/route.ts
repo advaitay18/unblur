@@ -6,8 +6,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const result = await ai.models.generateContent({
-      model: body.model === 'fast' ? 'gemini-2.5-flash' : 'gemini-2.5-pro',
+    const modelName = body.model === 'fast' ? 'gemini-2.5-flash' : 'gemini-2.5-flash';
+    const response = await ai.models.generateContent({
+      model: modelName,
       contents: body.message || 'Generate question',
       config: {
         systemInstruction: body.system,
@@ -15,9 +16,9 @@ export async function POST(req: NextRequest) {
         temperature: 0.7,
       },
     });
-    return NextResponse.json({ text: result.text });
+    return NextResponse.json({ text: response.text || '' });
   } catch (err: any) {
-    console.error('[/api/quiz] error:', err);
-    return NextResponse.json({ error: 'AI generation failed.' }, { status: 500 });
+    console.error('[/api/quiz] Error generating quiz content:', err?.message || err);
+    return NextResponse.json({ error: err?.message || 'AI generation failed.' }, { status: 500 });
   }
 }
