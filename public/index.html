@@ -1059,7 +1059,7 @@ Respond with ONLY a JSON array, no other text, no markdown fences, in this exact
 }
 
 const CONFIG={
-  AI_ANALYZE_URL:'/api/analyze',
+  AI_ANALYZE_URL:'/api/quiz',
   SESSION_URL:'/api/session',
   MODEL_FAST:'fast',
   MODEL_QUALITY:'quality'
@@ -1067,13 +1067,13 @@ const CONFIG={
 
 const S={stage:null,name:'',q:0,answers:[],aiAnswers:[],adaptDone:{},sc:{analytical:0,creative:0,social:0,independence:0,curiosity:0,risk:0,peer:0,authority:0},shownAdapt:false,user:null,paid149:false,paid499:false,chosenCareers:null};
 
-// ─── AI (Gemini via /api/analyze) ───
+// ─── AI (Gemini via /api/quiz) ───
 async function callAI(systemPrompt,userMsg,maxTokens=600,model=CONFIG.MODEL_FAST){
   const res=await fetch(CONFIG.AI_ANALYZE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:userMsg,system:systemPrompt,maxTokens,model})});
   if(!res.ok)throw new Error('AI request failed: '+res.status);
   const data=await res.json();
   const text=data.text??data.response??data.reply??data.message??data.content?.[0]?.text??(typeof data==='string'?data:null);
-  if(!text)throw new Error('Unexpected /api/analyze response shape');
+  if(!text)throw new Error('Unexpected /api/quiz response shape');
   return String(text).trim();
 }
 
