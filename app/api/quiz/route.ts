@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY is missing on Vercel' }, { status: 500 });
     }
     const body = await req.json();
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + apiKey;
     const payload: any = {
       contents: [{ parts: [{ text: body.message || 'Generate question' }] }]
     };
