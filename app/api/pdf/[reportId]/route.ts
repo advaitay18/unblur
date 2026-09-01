@@ -8,6 +8,9 @@ import { UnblurReportPDF, UnblurReport } from "@/lib/pdf/UnblurReportPDF";
 import { getReportBySlug } from "@/lib/session-helpers";
 import { trackServerEvent } from "@/lib/analytics-server";
 
+// Force runtime execution so Vercel skips pre-rendering page data during build
+export const dynamic = "force-dynamic";
+
 // NOTE: this file stays .ts (not .tsx) per Next.js API route convention, so
 // the PDF element is built with React.createElement rather than JSX.
 
@@ -45,7 +48,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="unblur-report-${params.reportId}.pdf"`,
+      "Content-Disposition": attachment; filename="unblur-report-${params.reportId}.pdf",
       "Cache-Control": "private, max-age=0, must-revalidate",
     },
   });
