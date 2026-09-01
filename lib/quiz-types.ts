@@ -42,7 +42,7 @@ export interface GeneratedQuestion {
 
 // A fully-resolved answer: the question that was asked, plus which option
 // the student picked. This is the shape both /api/generate-question
-// (as history) and /api/analyze (as the final answer set) actually need —
+// (as history) and /api/quiz (as the final answer set) actually need —
 // and therefore the shape progress-saving must persist, not just an
 // optionId/questionIndex pair.
 export interface AnsweredQuestion {

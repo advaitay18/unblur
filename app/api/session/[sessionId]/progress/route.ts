@@ -8,7 +8,7 @@
 // prompt with exactly 4 options, each carrying trait weights across
 // Unblur's 8 trait dimensions. The client collects these into a running
 // history and, once enough questions have been asked, posts the full
-// history to /api/analyze for the final report.
+// history to /api/quiz for the final report.
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";

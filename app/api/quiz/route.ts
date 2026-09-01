@@ -6,7 +6,7 @@
 //
 // FIXED: GET now returns `answeredQuestions` in the AnsweredQuestion[] shape
 // (see lib/quiz-types.ts) — the same shape /api/generate-question expects as
-// history and /api/analyze expects as its answers array. Previously GET
+// history and /api/quiz expects as its answers array. Previously GET
 // only returned the raw `session` row, which had nowhere to resume *from*:
 // the client had no way to rebuild its in-memory answer history after a
 // refresh, so mid-quiz progress was tracked but never actually usable.
@@ -31,7 +31,7 @@ export async function POST() {
 // GET /api/session?id=... — rehydrates an in-progress session on refresh.
 // Returns both the session row and the resolved answer history so the
 // client can immediately resume calling /api/generate-question with a
-// non-empty `answeredQuestions` array (or /api/analyze, if the student had
+// non-empty `answeredQuestions` array (or /api/quiz, if the student had
 // already reached the end).
 export async function GET(req: Request) {
   const id = new URL(req.url).searchParams.get("id");

@@ -5,7 +5,7 @@
 // FIXED: the previous version stored { questionId, optionId, questionIndex }.
 // That's not enough to resume an *adaptive* session: /api/generate-question
 // needs each prior answer's full questionText + chosenOption text to build
-// its history prompt, and /api/analyze needs those plus traitDeltas to score
+// its history prompt, and /api/quiz needs those plus traitDeltas to score
 // the report. optionId alone ("opt2") is also meaningless across questions,
 // since generate-question re-uses opt1..opt4 as labels on every question —
 // they're only unique within a single generated question, not session-wide.

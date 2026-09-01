@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, fontSize: 8, color: MUTED, textAlign: "center" },
 });
 
-// Shape matches the JSON schema returned by Module 1's /api/analyze route.
+// Shape matches the JSON schema returned by Module 1's /api/quiz route.
 export interface UnblurReport {
   archetype_name: string;
   archetype_description: string;

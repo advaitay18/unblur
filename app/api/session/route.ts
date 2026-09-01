@@ -1,4 +1,4 @@
-// app/api/analyze/route.ts
+// app/api/quiz/route.ts
 // Module 1: Gemini API Backend Scoring Engine
 // Requires: npm install @google/genai
 // Env: GEMINI_API_KEY
@@ -293,7 +293,7 @@ as specified in your system instructions.`;
 
     return NextResponse.json({ reportId: saved.slug, report });
   } catch (err) {
-    console.error("[/api/analyze] error:", err);
+    console.error("[/api/quiz] error:", err);
     return NextResponse.json({ error: "Failed to generate report." }, { status: 500 });
   }
 }

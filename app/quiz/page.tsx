@@ -200,7 +200,7 @@ export default function QuizPage() {
   );
 }
 
-// Inline loading skeleton shown while /api/analyze generates the structured
+// Inline loading skeleton shown while /api/quiz generates the structured
 // report (typically several seconds for a Gemini structured-output call).
 function ReportGenerationSkeleton() {
   return (
