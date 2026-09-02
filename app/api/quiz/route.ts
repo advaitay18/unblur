@@ -1,32 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is missing on Vercel' }, { status: 500 });
-    }
     const body = await req.json();
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=' + apiKey;
-    const payload: any = {
-      contents: [{ parts: [{ text: body.message || 'Generate question' }] }]
-    };
-    if (body.system) {
-      payload.system_instruction = { parts: [{ text: String(body.system) }] };
-    }
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      console.error('[/api/quiz] Google API Error:', data);
-      return NextResponse.json({ error: data.error?.message || 'Google API error', raw: data }, { status: 500 });
-    }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return NextResponse.json({ text });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const prompt = body.prompt || body.message || 'Provide a helpful response.';
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    return NextResponse.json({ result: text, answer: text }, { status: 200 });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'AI generation failed.' }, { status: 500 });
+    console.error('[/api/quiz] Google API Error:', err?.message || err);
+    return NextResponse.json({ error: err?.message || 'AI request failed' }, { status: 500 });
   }
 }
