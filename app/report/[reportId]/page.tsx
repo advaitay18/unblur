@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { getReportBySlug } from "@/lib/session-helpers";
 import { DownloadPdfButton } from "@/components/DownloadPdfButton";
+import { QuizFeedback } from "@/components/QuizFeedback";
 import type { UnblurReport } from "@/lib/pdf/UnblurReportPDF";
 
 export default async function ReportPage({ params }: { params: { reportId: string } }) {
@@ -72,6 +73,10 @@ export default async function ReportPage({ params }: { params: { reportId: strin
       <section className="report-section">
         <h2>For parents</h2>
         <p>{report.parent_guide_summary}</p>
+      </section>
+
+      <section className="report-section report-feedback-section">
+        <QuizFeedback reportId={params.reportId} sessionId={record.sessionId} />
       </section>
     </div>
   );

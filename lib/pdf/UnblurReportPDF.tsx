@@ -114,7 +114,7 @@ export function UnblurReportPDF({ report, studentName }: { report: UnblurReport;
         <View style={styles.divider} />
 
         <Text style={styles.sectionLabel}>Decision-pressure map</Text>
-        <Text style={styles.sectionHead}>What's actually driving the indecision</Text>
+        <Text style={styles.sectionHead}>{"What's actually driving the indecision"}</Text>
         {report.decision_pressure_map.map((d, i) => (
           <View key={i} style={{ marginBottom: 8 }}>
             <Text style={{ fontSize: 11, fontWeight: 700 }}>

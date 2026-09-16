@@ -1,36 +1,95 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    console.log('[/api/session] Incoming Auth Request:', body);
+    console.log("[/api/session] Incoming session request:", body);
 
-    // Handle typos in incoming field names (sessionId vs sessionld)
-    const incomingSessionId = body.sessionId || body.sessionld || body.id;
-    const email = body.email || body.user?.email || '';
-    const password = body.password || '';
-    const sessionId = incomingSessionId || 'sess_' + Math.random().toString(36).substring(2, 9);
-    const userId = body.userId || (email ? 'usr_' + Buffer.from(email).toString('hex').substring(0, 10) : 'usr_guest');
+    const email = body.email || body.user?.email || null;
+    let userId = body.userId || null;
 
-    const sessionResponse = {
+    // Optional user upsert if email is provided
+    if (email) {
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: { name: body.name || email.split("@")[0] },
+        create: { email, name: body.name || email.split("@")[0] },
+      }).catch((err) => {
+        console.warn("[/api/session] User upsert fallback:", err);
+        return null;
+      });
+      if (user) userId = user.id;
+    }
+
+    // Create real durable QuizSession in PostgreSQL
+    const session = await prisma.quizSession.create({
+      data: {
+        userId: userId ?? null,
+      },
+    });
+
+    // Also persist auth_session record for token/session tracking
+    const token = "tok_" + Math.random().toString(36).substring(2, 15);
+    await prisma.authSession.create({
+      data: {
+        userId: userId ?? null,
+        email: email ?? null,
+        token,
+      },
+    }).catch((err) => {
+      console.warn("[/api/session] AuthSession create fallback:", err);
+    });
+
+    return NextResponse.json({
       success: true,
       authenticated: true,
-      sessionId,
-      sessionld: sessionId,
-      userId,
+      sessionId: session.id,
+      sessionld: session.id, // compatibility with typo
+      userId: userId || "usr_guest",
       user: {
-        id: userId,
-        email: email || 'user@unblur.in',
-        name: email ? email.split('@')[0] : 'User'
+        id: userId || "usr_guest",
+        email: email || "user@unblur.in",
+        name: email ? email.split("@")[0] : "User",
       },
-      token: 'mock_jwt_token_' + Date.now(),
-      answers: body.answers || [],
-      score: typeof body.score === 'number' ? body.score : 0
-    };
-
-    return NextResponse.json(sessionResponse, { status: 200 });
+      token,
+      answers: [],
+      score: 0,
+    });
   } catch (err: any) {
-    console.error('[/api/session] Auth Error:', err);
-    return NextResponse.json({ error: err?.message || 'Authentication failed' }, { status: 500 });
+    console.error("[/api/session] Session Error:", err);
+    // Fallback gracefully so guest flows can proceed even if DB is temporarily unreachable
+    const fallbackId = "sess_" + Math.random().toString(36).substring(2, 9);
+    return NextResponse.json({
+      success: true,
+      sessionId: fallbackId,
+      sessionld: fallbackId,
+      warning: "Operating in offline/cached session mode",
+    });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get("sessionId") || searchParams.get("id");
+
+    if (!sessionId) {
+      return NextResponse.json({ error: "Missing sessionId parameter." }, { status: 400 });
+    }
+
+    const session = await prisma.quizSession.findUnique({
+      where: { id: sessionId },
+      include: { responses: { orderBy: { questionIndex: "asc" } } },
+    });
+
+    if (!session) {
+      return NextResponse.json({ error: "Session not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, session });
+  } catch (err: any) {
+    console.error("[/api/session] GET error:", err);
+    return NextResponse.json({ error: err?.message || "Failed to fetch session." }, { status: 500 });
   }
 }

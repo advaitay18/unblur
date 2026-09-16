@@ -12,22 +12,50 @@ export async function createQuizSession(userId?: string) {
   });
 }
 
-// Called after EVERY question is answered — not just at the end. This is the
-// core fix for "session loss on refresh": progress is durable after each tap.
+// Called after EVERY question is answered — not just at the end.
+// Progress is durable after each tap.
 export async function saveQuestionProgress(params: {
   sessionId: string;
   questionId: string;
   optionId: string;
   questionIndex: number; // 0-24
   timeSpentMs?: number;
+  questionText?: string;
+  chosenOption?: string;
+  traitDeltas?: any;
 }) {
-  const { sessionId, questionId, optionId, questionIndex, timeSpentMs } = params;
+  const {
+    sessionId,
+    questionId,
+    optionId,
+    questionIndex,
+    timeSpentMs,
+    questionText,
+    chosenOption,
+    traitDeltas,
+  } = params;
 
-  await prisma.$transaction([
+  return prisma.$transaction([
     prisma.quizResponse.upsert({
       where: { sessionId_questionId: { sessionId, questionId } },
-      update: { optionId, timeSpentMs },
-      create: { sessionId, questionId, optionId, timeSpentMs },
+      update: {
+        optionId,
+        questionIndex,
+        timeSpentMs,
+        questionText,
+        chosenOption,
+        traitDeltas: traitDeltas ?? undefined,
+      },
+      create: {
+        sessionId,
+        questionId,
+        optionId,
+        questionIndex,
+        timeSpentMs,
+        questionText,
+        chosenOption,
+        traitDeltas: traitDeltas ?? undefined,
+      },
     }),
     prisma.quizSession.update({
       where: { id: sessionId },
@@ -40,7 +68,7 @@ export async function saveQuestionProgress(params: {
 export async function resumeQuizSession(sessionId: string) {
   return prisma.quizSession.findUnique({
     where: { id: sessionId },
-    include: { responses: true },
+    include: { responses: { orderBy: { questionIndex: "asc" } } },
   });
 }
 
@@ -52,8 +80,14 @@ export async function markSessionCompleted(sessionId: string) {
 }
 
 // Public report lookup — powers unblur.app/report/[reportId]
-export async function getReportBySlug(slug: string) {
-  return prisma.generatedReport.findUnique({
-    where: { slug },
+// Searches by slug or unique ID
+export async function getReportBySlug(slugOrId: string) {
+  const report = await prisma.generatedReport.findUnique({
+    where: { slug: slugOrId },
   });
+  if (report) return report;
+
+  return prisma.generatedReport.findUnique({
+    where: { id: slugOrId },
+  }).catch(() => null);
 }
