@@ -87,12 +87,6 @@ model Feedback {
   id        String   @id @default(cuid()) 
   rating    Int 
   comment   String? 
-  createdAt DateTime @default(now()) 
-}
-model Feedback { 
-  id        String   @id @default(cuid()) 
-  rating    Int 
-  comment   String? 
   reportId  String? 
   sessionId String? 
   createdAt DateTime @default(now()) 
